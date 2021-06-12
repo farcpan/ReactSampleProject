@@ -72,8 +72,14 @@ $ git config user.email <your-email>
     $ lerna add --scope api -D typescript
     ```
 
-* `api` パッケージの `package.json`（`api/package.json`）に`tsconfig`の設定を書いておく
+* `api`パッケージの`package.json`（`api/package.json`）に`type: module`を追記（ `import` できるようにする）
+    ```json
+     "main": "dist/api.js",
+    +"type": "module",
     ```
+
+* `api`パッケージの `package.json`（`api/package.json`）に`tsconfig`の設定を書いておく
+    ```json
     "scripts": {
         "test": "echo \"Error: run tests from root\" && exit 1",
     +   "build": "tsc"
@@ -117,6 +123,70 @@ $ git config user.email <your-email>
     $ lerna run --scope api build
     ```
 
+
+---
+
+## 共通コンポーネントパッケージの作成
+
+* パッケージを作成
+    ```
+    $ lerna create components
+    ```
+
+* TypeScriptを導入
+    ```
+    $ lerna add --scope=components -D typescript
+    ```
+
+* `components` パッケージの `package.json`（`components/package.json`）に`tsconfig`の設定を書いておく
+    ```
+    "scripts": {
+        "test": "echo \"Error: run tests from root\" && exit 1",
+    +   "build": "tsc"
+    },
+    ``` 
+
+* 以下を実行。 `tsconfig.json` が`api`直下に追加される
+    ```
+    $ lerna run --scope api build -- -- --init
+    ```
+
+    *  `tsconfig.json` の構成については以下の通り。この設定が正しくないと `React Component`をWebアプリからインポートできないので注意
+        ```
+        + "outDir": "./dist", 
+        + "rootDir": "./lib", 
+        + "jsx": "react",
+        + "declaration": true,
+        + "noImplicitAny": true,  
+        + "noImplicitThis": true, 
+        + "noUnusedLocals": true,   
+        ```
+
+        ```
+            },
+        +   "exclude": [
+        +       "__tests__",
+        +       "dist/"
+        +   ]
+        }
+        ```
+
+* `components.js` を `components.ts` にリネーム
+    ```
+    $ mv ./packages/components/lib/components.js ./packages/components/lib/components.ts
+    ```
+
+* `components/package.json` を修正
+    ```
+    +   "main": "dist/api.js",
+    -   "main": "lib/api.js",
+    ```
+
+* 下記を実行すると、 `components/dist/components.js` が生成される
+    ```
+    $ lerna run --scope=components build
+    ```
+
 ---
 
 ## ライブラリの導入
@@ -151,3 +221,36 @@ $ lerna add @material-ui/lab
 * `@types/`とついたものはTypescript環境で必要な依存関係
 
 ---
+
+## 適当なコンポーネントを作ってみる
+
+* ソースコードファイルを作成
+    ```
+    $ mkdir packages/components/lib/src
+    $ touch packages/components/lib/src/TestComponent.tsx
+    ```
+
+* `TestComponent.tsx` を記述
+    ```javascript
+    import React from 'react';
+    const TestComponent = () => {
+        return (
+            <div>React!!</div>
+        );
+    }
+
+    export default TestComponent;
+    ```
+
+* `index.ts`を編集
+    ```javascript
+    export { default as TestComponent } from './src/TestComponent';
+    ```
+
+* `components`パッケージの依存関係を`webapp`に追加する
+    ```
+    $ lerna add components --scope=webapp
+    ```
+
+---
+
