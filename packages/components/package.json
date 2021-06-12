@@ -1,15 +1,11 @@
 {
-  "name": "api",
+  "name": "components",
   "version": "0.0.0",
-  "description": "api",
-  "keywords": [
-    "api"
-  ],
+  "description": "> TODO: description",
   "author": "myname <mymail>",
   "homepage": "https://github.com/farcpan/ReactSampleProject#readme",
   "license": "ISC",
-  "main": "dist/api.js",
-  "type": "module",
+  "main": "dist/components.js",
   "directories": {
     "lib": "lib",
     "test": "__tests__"

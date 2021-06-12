@@ -14,4 +14,6 @@ lernaを使ったmonorepo構成のReactサンプルアプリを作成する。
 
 * [TypeScript で型定義ファイル( d.ts )がないときの対処法](https://qiita.com/Nossa/items/726cc3e67527e896ed1e)
 
+* [React Component な npm のパッケージを作って TypeScript のプロジェクトで使う](https://qiita.com/pure-adachi/items/a9a39b3ffcb5af4c5b59)
+
 ---

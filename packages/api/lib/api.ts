@@ -1,7 +1,12 @@
-'use strict';
+export interface Prop {
+    id: number,
+    name: string,
+};
 
-module.exports = api;
+export const test = () => {
+    return 1;
+};
 
-function api() {
-    // TODO
-}
+export const f = (prop: Prop) => {
+    return -1;
+};
