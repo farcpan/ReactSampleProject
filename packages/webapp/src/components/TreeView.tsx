@@ -1,13 +1,29 @@
 import React, { useEffect, useState } from 'react';
 import { TreeViewData, FlatTreeViewData, convertTreeViewToFlat } from "./index";
-import { Button, Typography, Checkbox, Box } from "@material-ui/core";
+import { CHECKED, UNCHECKED, INDETERMINATED } from "./index";
+import { useStyles, getIndentSpaces, theme } from "./index";
+import { ThemeProvider } from '@material-ui/core/styles';
+import { Button, FormControlLabel, Checkbox, Box } from "@material-ui/core";
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 
-
+// TreeView用Props
 export interface TreeViewProps {
     data: TreeViewData[];
     onChange(results: TreeViewData[]): void;
+}
+
+// SubTreeView用Props
+export interface SubTreeViewProps {
+    data: TreeViewData;
+    onChange(result: TreeViewData): void;
+}
+
+// ExpansionButton用Props
+export interface ExpansionButtonProps {
+    isLeaf: boolean;
+    isExpanded: boolean;
+    onClick(result: boolean): void;
 }
 
 // ツリーの展開状態を更新する
@@ -38,7 +54,7 @@ const updateChecked = (id: number, isChecked: boolean, original: TreeViewData[])
 const setChecked = (id: number, isChecked: boolean, original: TreeViewData[]) => {
     original.forEach((d, index) => {
         if (d.id === id) {
-            original[index].checkedState = (isChecked) ? 1 : 0;
+            original[index].checkedState = (isChecked) ? CHECKED : UNCHECKED;
             if (d.children !== undefined) {
                 d.children!.forEach((value) => {
                     setChecked(value.id, isChecked, d.children!);
@@ -59,123 +75,144 @@ const adjustChecked = (original: TreeViewData[]) => {
             adjustChecked(d.children!);
 
             const count = d.children!.length;   // 子要素の数
-            const trueCounts = d.children!.filter((value) => { return value.checkedState == 1 }).length;
-            const falseCounts = d.children!.filter((value) => { return value.checkedState == 0 }).length;
+            const checkedCounts = d.children!.filter((value) => { return value.checkedState === CHECKED }).length;
+            const uncheckedCounts = d.children!.filter((value) => { return value.checkedState === UNCHECKED }).length;
             
-            if (count == trueCounts) {
-                original[index].checkedState = 1;
-            } else if (count == falseCounts) {
-                original[index].checkedState = 0;
+            if (count === uncheckedCounts) {
+                original[index].checkedState = UNCHECKED;
+            } else if (count === checkedCounts) {
+                original[index].checkedState = CHECKED;
             } else {
-                original[index].checkedState = 2;   // indeterminate
+                original[index].checkedState = INDETERMINATED; 
             }
         }
     })
 }
 
-/**
- * TreeView with checkbox component
- * @param props Data for treeview
- * @returns Component
- */
-const TreeView = (props: TreeViewProps) => {
+// Expansion button
+const ExpansionButton = (props: ExpansionButtonProps) => {
+    const styles = useStyles();
+
+    if (props.isLeaf) {
+        return (<div className={styles.expansionButton}></div>);
+    }
+
+    if (props.isExpanded) {
+        return (
+            <Button className={styles.expansionButton} onClick={() => { props.onClick(false) }}>
+                <ExpandMoreIcon className={styles.expansionIcon}/>
+            </Button>
+        );
+    }
+
+    return (
+        <Button className={styles.expansionButton} onClick={() => { props.onClick(true) }}>
+            <ChevronRightIcon className={styles.expansionIcon}/>
+        </Button>
+    );
+}
+
+// SubTreeView
+const SubTreeView = (props: SubTreeViewProps) => {
+    const styles = useStyles();
+
     // データ
-    const [original, setOriginal] = useState<TreeViewData[]>([]);
+    const [original, setOriginal] = useState<TreeViewData>(props.data);
     // 表示用に変換したデータ
-    const [current, setCurrent] = useState<FlatTreeViewData[]>([]);
+    const [current, setCurrent] = useState<FlatTreeViewData[]>(convertTreeViewToFlat([props.data]));
+
+    useEffect(() => {
+        console.log("treeview is mounted.");
+    }, []);
 
     // チェックボックス操作時のコールバック
     const onCheckChange = (id: number, isChecked: boolean) => {
-        let copied = JSON.parse(JSON.stringify(original));  // deep copy
-        updateChecked(id, isChecked, copied);
+        let copied: TreeViewData = JSON.parse(JSON.stringify(original));  // deep copy
+        updateChecked(id, isChecked, [copied]);
         setOriginal(copied);
 
-        const flatten = convertTreeViewToFlat(copied);
+        const flatten = convertTreeViewToFlat([copied]);
         setCurrent(flatten);
+
+        // callback
+        props.onChange(copied);
     }
 
     // ツリー操作時のコールバック
     const onExpansionChange = (id: number, isExpanded: boolean) => {
-        let copied = JSON.parse(JSON.stringify(original));  // deep copy
-        updateExpansion(id, isExpanded, copied);
+        let copied: TreeViewData = JSON.parse(JSON.stringify(original));  // deep copy
+        updateExpansion(id, isExpanded, [copied]);
         setOriginal(copied);
 
-        const flatten = convertTreeViewToFlat(copied);
+        const flatten = convertTreeViewToFlat([copied]);
         setCurrent(flatten);
-    }
 
-    // Componentマウント時にPropsで受け取ったデータをStateに反映する
-    useEffect(() => {
-        setOriginal(props.data);
-        setCurrent(convertTreeViewToFlat(props.data, true));
-    }, []);
+        // callback
+        props.onChange(copied);
+    }
 
     return (
         <div>
             {
                 current.map((data) => {
-                    let widthOfButtonArea = "0px";
-                    if (data.rank === 2) {
-                        widthOfButtonArea = "50px";
-                    } else if (data.rank === 3) {
-                        widthOfButtonArea = "100px";
-                    } else if (data.rank >= 4) {
-                        widthOfButtonArea = "150px";
+                    if (!data.isShow) {
+                        return <div></div>;
                     }
 
+                    const widthOfButtonArea = getIndentSpaces(data.rank);
                     return (
-                        <div style={{textAlign: "start"}}>
-                            {
-                                (() => {
-                                    if (data.isShow || data.rank === 1) {
-                                        return (
-                                            <Box flexDirection="row" display="inline-flex" >
-                                                <div style={{ width: widthOfButtonArea }}></div>
-                                                <div style={{ width: "50px"  }}>
-                                                    {
-                                                        (() => {
-                                                            if (!data.isLeaf) {
-                                                                if (data.isExpanded) {
-                                                                    return (
-                                                                        <Button onClick={() => { onExpansionChange(data.id, false) }}>
-                                                                            <ExpandMoreIcon />
-                                                                        </Button>
-                                                                    );    
-                                                                } else {
-                                                                    return (
-                                                                        <Button onClick={() => { onExpansionChange(data.id, true) }}>
-                                                                            <ChevronRightIcon />
-                                                                        </Button>
-                                                                    );    
-                                                                }
-                                                            } else {
-                                                                return <div></div>
-                                                            }                        
-                                                        })()
-                                                    }
-                                                </div>
-                                                <div style={{ width: "50px" }}>
-                                                    <Checkbox
-                                                        checked={(data.checkedState > 0)} 
-                                                        indeterminate={(data.checkedState == 2)}
-                                                        onChange={(event: React.ChangeEvent<HTMLInputElement>) => { 
-                                                                    onCheckChange(data.id, event.target.checked) 
-                                                                }}/>
-                                                </div>
-                                                <Typography style={{ color: "#000000", textAlign: "start", padding: "10px" }}>
-                                                    {data.id}: {data.text}: {(data.isShow) ? "show" : "hidden"}
-                                                </Typography>
-                                            </Box>
-                                        )
-                                    }
-                                })()
-                            }
+                        <div className={styles.root}>
+                            <Box flexDirection="row" display="inline-flex">
+                                <div style={{ width: widthOfButtonArea }}></div>
+                                <ExpansionButton 
+                                    isLeaf={data.isLeaf}
+                                    isExpanded={data.isExpanded}
+                                    onClick={(result) => { onExpansionChange(data.id, result) }}
+                                    />
+                                <FormControlLabel 
+                                    className={styles.checkbox}
+                                    control={
+                                        <Checkbox
+                                            checked={(data.checkedState === CHECKED || data.checkedState === INDETERMINATED)} 
+                                            indeterminate={(data.checkedState === INDETERMINATED)}
+                                            onChange={(event: React.ChangeEvent<HTMLInputElement>) => { 
+                                                    onCheckChange(data.id, event.target.checked) 
+                                                }}/>
+                                            }
+                                    label={data.text} />
+                            </Box>
                         </div>
-                    )
+                    )                    
                 })
             }
         </div>
     );
+}
+
+const TreeView = (props: TreeViewProps) => {
+    const [original, setOriginal] = useState<TreeViewData[]>(props.data);
+
+    const onChange = (index: number, result: TreeViewData) => {
+        let copied: TreeViewData[] = JSON.parse(JSON.stringify(props.data));
+        copied[index] = result;
+        setOriginal(copied);
+
+        props.onChange(copied);
+    }
+
+    return (
+        <ThemeProvider theme={theme}>
+            {
+                props.data.map((d, index) => {
+                    return (
+                        <SubTreeView 
+                            key={`subtreeview-${index+1}`} 
+                            data={d} onChange={(result: TreeViewData) => { onChange(index, result)}}/>
+                    )
+                })
+            }
+        </ThemeProvider>
+    )
 }
 
 export default TreeView;

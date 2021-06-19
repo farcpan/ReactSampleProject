@@ -20,7 +20,13 @@ function App() {
         <TestComponent />
   
         <div style={{ overflow: "scroll", height: "400px", width: "800px", backgroundColor: "#dddddd"}}>
-          <TreeView data={data} onChange={(results) => { console.log("onChange") }}/>
+          <TreeView 
+            data={data} 
+            onChange={(results) => { 
+                results.forEach((result) => {
+                  console.log(result);
+                });
+             }}/>
         </div>
   
         <a
