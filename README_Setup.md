@@ -79,7 +79,7 @@ $ git config user.email <your-email>
     ```
 
 * `api`パッケージの `package.json`（`api/package.json`）に`tsconfig`の設定を書いておく
-    ```json
+    ```
     "scripts": {
         "test": "echo \"Error: run tests from root\" && exit 1",
     +   "build": "tsc"
