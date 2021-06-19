@@ -38,7 +38,7 @@ const updateChecked = (id: number, isChecked: boolean, original: TreeViewData[])
 const setChecked = (id: number, isChecked: boolean, original: TreeViewData[]) => {
     original.forEach((d, index) => {
         if (d.id === id) {
-            original[index].isChecked = isChecked;
+            original[index].checkedState = (isChecked) ? 1 : 0;
             if (d.children !== undefined) {
                 d.children!.forEach((value) => {
                     setChecked(value.id, isChecked, d.children!);
@@ -59,8 +59,16 @@ const adjustChecked = (original: TreeViewData[]) => {
             adjustChecked(d.children!);
 
             const count = d.children!.length;   // 子要素の数
-            const trueCounts = d.children!.filter((value) => { return value.isChecked }).length;
-            original[index].isChecked = (count == trueCounts);
+            const trueCounts = d.children!.filter((value) => { return value.checkedState == 1 }).length;
+            const falseCounts = d.children!.filter((value) => { return value.checkedState == 0 }).length;
+            
+            if (count == trueCounts) {
+                original[index].checkedState = 1;
+            } else if (count == falseCounts) {
+                original[index].checkedState = 0;
+            } else {
+                original[index].checkedState = 2;   // indeterminate
+            }
         }
     })
 }
@@ -148,7 +156,8 @@ const TreeView = (props: TreeViewProps) => {
                                                 </div>
                                                 <div style={{ width: "50px" }}>
                                                     <Checkbox
-                                                        checked={data.isChecked} 
+                                                        checked={(data.checkedState > 0)} 
+                                                        indeterminate={(data.checkedState == 2)}
                                                         onChange={(event: React.ChangeEvent<HTMLInputElement>) => { 
                                                                     onCheckChange(data.id, event.target.checked) 
                                                                 }}/>
