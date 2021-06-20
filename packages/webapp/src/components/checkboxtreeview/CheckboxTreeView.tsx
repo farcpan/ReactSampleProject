@@ -170,7 +170,7 @@ const SubTreeView = (props: SubTreeViewProps) => {
                                     className={styles.checkbox}
                                     control={
                                         <Checkbox
-                                            checked={(value.checkedState === CHECKED || data.checkedState === INDETERMINATED)} 
+                                            checked={(value.checkedState === CHECKED || value.checkedState === INDETERMINATED)} 
                                             indeterminate={(value.checkedState === INDETERMINATED)}
                                             onChange={(event: React.ChangeEvent<HTMLInputElement>) => { 
                                                     onCheckChange(value.id, event.target.checked) 
