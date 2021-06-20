@@ -5,7 +5,7 @@ import './App.css';
 // components
 import * as ApiPackage from 'api';
 import { TestComponent } from 'components';
-import { TreeView, createTestTreeViewData, TreeViewData } from "./components";
+import { CheckboxTreeView, createTestTreeViewData, TreeViewData } from "./components/checkboxtreeview";
 
 function App() {
   const value = ApiPackage.test();
@@ -20,7 +20,7 @@ function App() {
         <TestComponent />
   
         <div style={{ overflow: "scroll", height: "400px", width: "800px", backgroundColor: "#dddddd"}}>
-          <TreeView 
+          <CheckboxTreeView 
             data={data} 
             onChange={(results) => { 
                 results.forEach((result) => {
@@ -30,11 +30,7 @@ function App() {
         </div>
   
         <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
+          className="App-link" href="https://reactjs.org" target="_blank" rel="noopener noreferrer">
           Learn React
         </a>
       </header>

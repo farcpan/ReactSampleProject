@@ -1,36 +1,40 @@
 import React, { useEffect, useState } from 'react';
-import { TreeViewData, FlatTreeViewData, convertTreeViewToFlat } from "./index";
-import { CHECKED, UNCHECKED, INDETERMINATED } from "./index";
-import { useStyles, getIndentSpaces, theme } from "./index";
+
+// Material UI
 import { ThemeProvider } from '@material-ui/core/styles';
 import { Button, FormControlLabel, Checkbox, Box } from "@material-ui/core";
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 
+import { TreeViewData, FlatTreeViewData } from "./index";
+import { convertTreeViewToFlat } from "./index";
+import { useStyles, theme, getIndentSpaces } from "./index";
+import { CHECKED, UNCHECKED, INDETERMINATED } from "./index";
+
 // TreeView用Props
-export interface TreeViewProps {
+interface TreeViewProps {
     data: TreeViewData[];
     onChange(results: TreeViewData[]): void;
 }
 
 // SubTreeView用Props
-export interface SubTreeViewProps {
+interface SubTreeViewProps {
     data: TreeViewData;
     onChange(result: TreeViewData): void;
 }
 
 // ExpansionButton用Props
-export interface ExpansionButtonProps {
+interface ExpansionButtonProps {
     isLeaf: boolean;
     isExpanded: boolean;
     onClick(result: boolean): void;
 }
 
 // ツリーの展開状態を更新する
-const updateExpansion = (id: number, isExpanded: boolean, original: TreeViewData[]) => {
-    original.forEach((d, index) => {
+const updateExpansion = (id: number, isExpanded: boolean, data: TreeViewData[]) => {
+    data.forEach((d, index) => {
         if (d.id === id) {
-            original[index].isExpanded = isExpanded;
+            data[index].isExpanded = isExpanded;
             if (d.children !== undefined && !isExpanded) {  // 閉じる場合は子要素すべてに影響、開く場合は1つ下の階層まで
                 d.children!.forEach((value) => {
                     updateExpansion(value.id, isExpanded, d.children!);
@@ -45,16 +49,16 @@ const updateExpansion = (id: number, isExpanded: boolean, original: TreeViewData
 }
 
 // チェックボックスの状態を更新する
-const updateChecked = (id: number, isChecked: boolean, original: TreeViewData[]) => {
-    setChecked(id, isChecked, original);
-    adjustChecked(original);
+const updateChecked = (id: number, isChecked: boolean, data: TreeViewData[]) => {
+    setChecked(id, isChecked, data);    // 1st step: チェックボックスの状態を更新する
+    adjustChecked(data);                // 2nd step: 1st stepの変更内容をデータ全体で確認して中間状態を考慮した状態に更新する
 }
 
-// 1st step of checked state update
-const setChecked = (id: number, isChecked: boolean, original: TreeViewData[]) => {
-    original.forEach((d, index) => {
+// 1st step
+const setChecked = (id: number, isChecked: boolean, data: TreeViewData[]) => {
+    data.forEach((d, index) => {
         if (d.id === id) {
-            original[index].checkedState = (isChecked) ? CHECKED : UNCHECKED;
+            data[index].checkedState = (isChecked) ? CHECKED : UNCHECKED;
             if (d.children !== undefined) {
                 d.children!.forEach((value) => {
                     setChecked(value.id, isChecked, d.children!);
@@ -69,8 +73,8 @@ const setChecked = (id: number, isChecked: boolean, original: TreeViewData[]) =>
 }
 
 // 2nd step
-const adjustChecked = (original: TreeViewData[]) => {
-    original.forEach((d, index) => {
+const adjustChecked = (data: TreeViewData[]) => {
+    data.forEach((d, index) => {
         if (d.children !== undefined) {
             adjustChecked(d.children!);
 
@@ -79,11 +83,11 @@ const adjustChecked = (original: TreeViewData[]) => {
             const uncheckedCounts = d.children!.filter((value) => { return value.checkedState === UNCHECKED }).length;
             
             if (count === uncheckedCounts) {
-                original[index].checkedState = UNCHECKED;
+                data[index].checkedState = UNCHECKED;
             } else if (count === checkedCounts) {
-                original[index].checkedState = CHECKED;
+                data[index].checkedState = CHECKED;
             } else {
-                original[index].checkedState = INDETERMINATED; 
+                data[index].checkedState = INDETERMINATED; 
             }
         }
     })
@@ -93,6 +97,7 @@ const adjustChecked = (original: TreeViewData[]) => {
 const ExpansionButton = (props: ExpansionButtonProps) => {
     const styles = useStyles();
 
+    // TreeViewの末端にはボタンを表示しない
     if (props.isLeaf) {
         return (<div className={styles.expansionButton}></div>);
     }
@@ -117,69 +122,61 @@ const SubTreeView = (props: SubTreeViewProps) => {
     const styles = useStyles();
 
     // データ
-    const [original, setOriginal] = useState<TreeViewData>(props.data);
+    const [data, setData] = useState<TreeViewData>(props.data);
     // 表示用に変換したデータ
-    const [current, setCurrent] = useState<FlatTreeViewData[]>(convertTreeViewToFlat([props.data]));
-
-    useEffect(() => {
-        console.log("treeview is mounted.");
-    }, []);
+    const [displayData, setDisplayData] = useState<FlatTreeViewData[]>(convertTreeViewToFlat([props.data]));
 
     // チェックボックス操作時のコールバック
     const onCheckChange = (id: number, isChecked: boolean) => {
-        let copied: TreeViewData = JSON.parse(JSON.stringify(original));  // deep copy
+        let copied: TreeViewData = JSON.parse(JSON.stringify(data));  // deep copy
         updateChecked(id, isChecked, [copied]);
-        setOriginal(copied);
+        setData(copied);
 
         const flatten = convertTreeViewToFlat([copied]);
-        setCurrent(flatten);
-
-        // callback
-        props.onChange(copied);
+        setDisplayData(flatten);    // Stateの更新
+        props.onChange(copied);     // 呼び出し元に変更内容を返す 
     }
 
     // ツリー操作時のコールバック
     const onExpansionChange = (id: number, isExpanded: boolean) => {
-        let copied: TreeViewData = JSON.parse(JSON.stringify(original));  // deep copy
+        let copied: TreeViewData = JSON.parse(JSON.stringify(data));
         updateExpansion(id, isExpanded, [copied]);
-        setOriginal(copied);
+        setData(copied);
 
         const flatten = convertTreeViewToFlat([copied]);
-        setCurrent(flatten);
-
-        // callback
-        props.onChange(copied);
+        setDisplayData(flatten);    // Stateの更新
+        props.onChange(copied);     // 呼び出し元に変更内容を返す
     }
 
     return (
         <div>
             {
-                current.map((data) => {
-                    if (!data.isShow) {
-                        return <div></div>;
+                displayData.map((value) => {
+                    if (value.hidden) {
+                        return <div key={`subtreeview-div-${value.id}`}></div>;
                     }
 
-                    const widthOfButtonArea = getIndentSpaces(data.rank);
+                    const widthOfButtonArea = getIndentSpaces(value.hierarchy);
                     return (
-                        <div className={styles.root}>
+                        <div key={`subtreeview-div-${value.id}`} className={styles.root}>
                             <Box flexDirection="row" display="inline-flex">
                                 <div style={{ width: widthOfButtonArea }}></div>
                                 <ExpansionButton 
-                                    isLeaf={data.isLeaf}
-                                    isExpanded={data.isExpanded}
-                                    onClick={(result) => { onExpansionChange(data.id, result) }}
+                                    isLeaf={value.isLeaf}
+                                    isExpanded={value.isExpanded}
+                                    onClick={(result) => { onExpansionChange(value.id, result) }}
                                     />
                                 <FormControlLabel 
                                     className={styles.checkbox}
                                     control={
                                         <Checkbox
-                                            checked={(data.checkedState === CHECKED || data.checkedState === INDETERMINATED)} 
-                                            indeterminate={(data.checkedState === INDETERMINATED)}
+                                            checked={(value.checkedState === CHECKED || value.checkedState === INDETERMINATED)} 
+                                            indeterminate={(value.checkedState === INDETERMINATED)}
                                             onChange={(event: React.ChangeEvent<HTMLInputElement>) => { 
-                                                    onCheckChange(data.id, event.target.checked) 
+                                                    onCheckChange(value.id, event.target.checked) 
                                                 }}/>
                                             }
-                                    label={data.text} />
+                                    label={value.text} />
                             </Box>
                         </div>
                     )                    
@@ -189,25 +186,32 @@ const SubTreeView = (props: SubTreeViewProps) => {
     );
 }
 
-const TreeView = (props: TreeViewProps) => {
-    const [original, setOriginal] = useState<TreeViewData[]>(props.data);
+// TreeView本体
+const CheckboxTreeView = (props: TreeViewProps) => {
+    const [data, setData] = useState<TreeViewData[]>([]);
 
+    useEffect(() => {
+        setData(props.data);
+    }, [props.data]);
+
+    // TreeViewの変更内容を受け取ってデータを更新する
     const onChange = (index: number, result: TreeViewData) => {
         let copied: TreeViewData[] = JSON.parse(JSON.stringify(props.data));
-        copied[index] = result;
-        setOriginal(copied);
+        copied[index] = result;     // データを更新する
 
-        props.onChange(copied);
+        setData(copied);            // Stateの更新
+        props.onChange(copied);     // 呼び出し元に変更後のデータを返す
     }
 
     return (
         <ThemeProvider theme={theme}>
             {
-                props.data.map((d, index) => {
+                data.map((value, index) => {
                     return (
                         <SubTreeView 
-                            key={`subtreeview-${index+1}`} 
-                            data={d} onChange={(result: TreeViewData) => { onChange(index, result)}}/>
+                            key={`subtreeview-${index + 1}`} 
+                            data={value} 
+                            onChange={(result: TreeViewData) => { onChange(index, result)}}/>
                     )
                 })
             }
@@ -215,4 +219,4 @@ const TreeView = (props: TreeViewProps) => {
     )
 }
 
-export default TreeView;
+export default CheckboxTreeView;
