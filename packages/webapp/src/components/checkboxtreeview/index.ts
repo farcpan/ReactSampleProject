@@ -80,20 +80,30 @@ export const theme = createMuiTheme({
 // TreeViewのスタイル
 export const useStyles = makeStyles((theme) =>({
     root: {
-        padding: "5px",
         textAlign: "start",
-        maxHeight: "25px",
+        minHeight: "35px",
+        maxHeight: "35px",
+        margin: "5px",
     },
     expansionButton: {
-      width: "40px",
-      maxWidth: "40px",
-      minWidth: "40px",
+        width: "30px",
+        minHeight: "25px",
+        maxHeight: "25px",
+        marginLeft: "5px",
+        marginRight: "10px",
+        paddingLeft: "5px",
+        paddingRight: "5px",
+        paddingTop: "5px",
+        paddingBottom: "5px",
+        textAlign: "center",
     },
     expansionIcon: {
-        width: "40px",
+        color: "#000000",
     },
     checkbox: {
         color: "#222222",
+        minHeight: "35px",
+        maxHeight: "35px",
     },
 }));
 

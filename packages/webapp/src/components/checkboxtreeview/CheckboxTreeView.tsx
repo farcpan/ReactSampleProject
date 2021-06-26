@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 
 // Material UI
 import { ThemeProvider } from '@material-ui/core/styles';
-import { Button, FormControlLabel, Checkbox, Box } from "@material-ui/core";
+import { FormControlLabel, Checkbox, Box, Typography } from "@material-ui/core";
 import ExpandMoreIcon from '@material-ui/icons/ExpandMore';
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 
@@ -97,23 +97,22 @@ const adjustChecked = (data: TreeViewData[]) => {
 const ExpansionButton = (props: ExpansionButtonProps) => {
     const styles = useStyles();
 
-    // TreeViewの末端にはボタンを表示しない
-    if (props.isLeaf) {
-        return (<div className={styles.expansionButton}></div>);
-    }
-
-    if (props.isExpanded) {
-        return (
-            <Button className={styles.expansionButton} onClick={() => { props.onClick(false) }}>
-                <ExpandMoreIcon className={styles.expansionIcon}/>
-            </Button>
-        );
-    }
-
     return (
-        <Button className={styles.expansionButton} onClick={() => { props.onClick(true) }}>
-            <ChevronRightIcon className={styles.expansionIcon}/>
-        </Button>
+        <div className={styles.expansionButton}>
+            {
+                (props.isLeaf) ? 
+                    <div className={styles.expansionIcon}></div> :
+                    (
+                        (props.isExpanded) ? 
+                            <ExpandMoreIcon 
+                                className={styles.expansionIcon} 
+                                onClick={() => { props.onClick(false)  }}/> :
+                            <ChevronRightIcon 
+                                className={styles.expansionIcon} 
+                                onClick={() => { props.onClick(true) }}/>
+                    )
+            }
+        </div>
     );
 }
 
@@ -159,8 +158,7 @@ const SubTreeView = (props: SubTreeViewProps) => {
                     const widthOfButtonArea = getIndentSpaces(value.hierarchy);
                     return (
                         <div key={`subtreeview-div-${value.id}`} className={styles.root}>
-                            <Box flexDirection="row" display="inline-flex">
-                                <div style={{ width: widthOfButtonArea }}></div>
+                            <Box flexDirection="row" display="inline-flex" style={{ marginLeft: widthOfButtonArea }}>
                                 <ExpansionButton 
                                     isLeaf={value.isLeaf}
                                     isExpanded={value.isExpanded}
@@ -176,8 +174,9 @@ const SubTreeView = (props: SubTreeViewProps) => {
                                                     onCheckChange(value.id, event.target.checked) 
                                                 }}/>
                                             }
-                                    label={value.text} />
+                                    label={<Typography style={{ fontSize: "14px", padding: "5px"}}>{value.text}</Typography>} />
                             </Box>
+                            <br/>
                         </div>
                     )                    
                 })
